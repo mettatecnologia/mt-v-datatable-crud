@@ -1,6 +1,6 @@
 <template>
 <div>
-    
+
     <slot name="toolbar">
         <v-toolbar flat color="white">
             <v-btn v-if="podeCriar" color="primary" dark class="mb-2" @click="novo()">{{toolbarBtnTitulo || tituloNovo || 'Adicionar'}}</v-btn>
@@ -9,14 +9,14 @@
         </v-toolbar>
     </slot>
 
-    
-    <v-data-table 
-        class="elevation-1" 
-        :items="datatableItens" 
-        :search="datatableSearch" 
-        :headers="datatable.headers" 
-        :disable-initial-sort="datatable.disableInitialSort" 
-        :rows-per-page-items="datatable.rowsPerPageItems" 
+
+    <v-data-table
+        class="elevation-1"
+        :items="datatableItens"
+        :search="datatableSearch"
+        :headers="datatable.headers"
+        :disable-initial-sort="datatable.disableInitialSort"
+        :rows-per-page-items="datatable.rowsPerPageItems"
         :pagination.sync="datatable.pagination"
     >
 
@@ -30,10 +30,10 @@
             <td class="justify-center layout px-0">
                 <slot name="actions">
                     <div class="mr-2 mt-3">
-                        <jb-icone v-if="podeEditar" small tt-text="Editar" @click="editar(props.item)" > edit </jb-icone>
-                        <jb-icone v-if="podeDeletar" small tt-text="Deletar" @click="deletarConfirm(props.item)" > delete </jb-icone>
+                        <jb-icon v-if="podeEditar" small tt-text="Editar" @click="editar(props.item)" > edit </jb-icon>
+                        <jb-icon v-if="podeDeletar" small tt-text="Deletar" @click="deletarConfirm(props.item)" > delete </jb-icon>
 
-                        <jb-icone v-if="podeAtivarInativar" small :tt-text="props.item.ativo!='N' ? 'Inativar' : 'Ativar'" @click="ativarInativarConfirm(props.item)" > {{ props.item.ativo!='N' ? 'fas fa-level-down-alt' : 'fas fa-level-up-alt'}} </jb-icone>
+                        <jb-icon v-if="podeAtivarInativar" small :tt-text="props.item.ativo!='N' ? 'Inativar' : 'Ativar'" @click="ativarInativarConfirm(props.item)" > {{ props.item.ativo!='N' ? 'fas fa-level-down-alt' : 'fas fa-level-up-alt'}} </jb-icon>
 
                     </div>
                 </slot>
@@ -45,12 +45,12 @@
         </template>
 
     </v-data-table>
- 
+
     <jb-dialog v-model="dialog.mostrar" @fechar="fecharDialog" :titulo="formTitulo" :fullscreen="dialogFullscreen" :persistent="dialogPersistent" :max-width="dialogMaxWidth || '750px'">
 
         <jb-loading v-model="dialog.loading.mostrar"></jb-loading>
 
-        <jb-formulario @keyup.native.enter="submitEnter" v-model="dialog.form.valid" ref="form" validar :mensagens="dialog.form.mensagens_data" :mensagens-tipo="dialog.form.mensagensTipo_data" :mensagens-detalhes="dialog.form.mensagens_detalhes" :reset="dialog.form.reset" cancelar-submit>
+        <jb-form @keyup.native.enter="submitEnter" v-model="dialog.form.valid" ref="form" validar :mensagens="dialog.form.mensagens_data" :mensagens-tipo="dialog.form.mensagensTipo_data" :mensagens-detalhes="dialog.form.mensagens_detalhes" :reset="dialog.form.reset" cancelar-submit>
             <slot name="form"></slot>
 
             <v-card-actions slot="botoes">
@@ -58,7 +58,7 @@
                 <v-btn color="primary" flat @click="fecharDialog()">Cancelar</v-btn>
                 <v-btn color="primary" flat @click="saveConfirm()" :disabled="!dialog.form.valid || !valid">Salvar</v-btn>
             </v-card-actions>
-        </jb-formulario>
+        </jb-form>
 
     </jb-dialog>
 
@@ -94,7 +94,7 @@ export default {
         rowsPerPageItems:Array,
         pagination:Object,
         search:String,
-        
+
         //---- Dialog
         model:Object,
         modelFields:Object,
@@ -116,13 +116,13 @@ export default {
         preSalvar:{type:Function, default:v=>(v)},
 
         httpUrl:String,
-        
+
     },
     data() {
         return {
             modeloDefaultSave:JSON.parse(JSON.stringify(this.modelFields)),
             Model: this.model,
-            
+
             dialog:{
                 mostrar: false,
                 form: {
@@ -159,9 +159,9 @@ export default {
         initialize(){
             this.dialog.form.mensagens_data = null
             this.dialog.form.reset = true
-            
+
             this.modelFields = Object.assign(this.modelFields, this.modeloDefaultSave)
-            
+
             this.datatable.indexItem = -1
         },
         abrirDialog(){
@@ -193,7 +193,7 @@ export default {
 
             this.datatable.indexItem = this.datatable.items.indexOf(item)
             this.modelFields = Object.assign(this.modelFields, item)
-            
+
             this.dialog.form.reset = false
             this.abrirDialog()
         },
@@ -241,7 +241,7 @@ export default {
             })
         },
         saveConfirm () {
-            
+
             this.valid = false
 
             let item = this.modelFields
@@ -272,8 +272,8 @@ export default {
         },
 
         // ==== Operações HTTP
-        ativarInativar(item){     
-            
+        ativarInativar(item){
+
             item = this.preAtivarInativar(item)
 
             item.ativobool = item.ativo=='N' //inverte os ativo
@@ -289,7 +289,7 @@ export default {
                     if(response.erro){
                         this.dialog.form.mensagensTipo_data = response.mensagens_tipo
                         this.dialog.form.mensagens_data = response.mensagens
-                        this.dialog.form.mensagens_detalhes = response.exception 
+                        this.dialog.form.mensagens_detalhes = response.exception
                     }
                     else {
                         let indexItem = this.datatable.items.indexOf(item)
@@ -318,7 +318,7 @@ export default {
                         //deu certo
                         this.$dialog.message.success(response.mensagens.join('-'), {timeout: 3000})
                         this.datatable.items.splice(index, 1)
-                        
+
                     }
             });
         },
@@ -328,21 +328,21 @@ export default {
 
             item = this.preSalvar(item)
 
-            let indexItem = this.datatable.indexItem 
+            let indexItem = this.datatable.indexItem
 
             this.Model
                 .preparaRequest({url:this.httpUrl})
                 .preparaItem(item)
                 .createAndSave()
                 .then(v => {
-                    
+
                     this.dialog.loading.mostrar = false
                     let response = v.__response
-                    
+
                     if(response.erro){
                         this.dialog.form.mensagensTipo_data = response.mensagens_tipo
                         this.dialog.form.mensagens_data = response.mensagens
-                        this.dialog.form.mensagens_detalhes = response.exception 
+                        this.dialog.form.mensagens_detalhes = response.exception
                     }
                     else {
                         if (indexItem > -1) {
@@ -351,14 +351,14 @@ export default {
                             this.datatable.items.push(response.dados)
                         }
                         this.$dialog.message.success(response.mensagens.join('-'), {timeout: 5000});
-                        
-                        this.fecharDialog()   
+
+                        this.fecharDialog()
 
                         this.posNovo(response, item)
                         this.posEditar(response, item)
 
                         // delete this.Model.__response;
-                        
+
                     }
             });
 
@@ -375,10 +375,10 @@ export default {
                 const element = this.$refs[campo].$el.querySelector('input')
                 if (element) this.$nextTick(() => { element.focus() })
             }
-            
+
         },
     },
-    mounted(){   
+    mounted(){
     },
 }
 </script>

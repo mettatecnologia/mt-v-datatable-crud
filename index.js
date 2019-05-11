@@ -1,1 +1,1 @@
-Vue.component('jb-v-datatable-crud', require('./JbDataTableCrud.vue').default);
+Vue.component('jb-datatable-crud', require('./JbDataTableCrud.vue').default);

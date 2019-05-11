@@ -1,0 +1,24 @@
+{
+  "name": "jb-v-datatable-crud",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jbmchd/jb-v-datatable-crud.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jbmchd/jb-v-datatable-crud/issues"
+  },
+  "homepage": "https://github.com/jbmchd/jb-v-datatable-crud#readme",
+  "dependencies": {
+    "vuetify-dialog": "^0.3.4",
+    "jb-v-dialog": "1.0.0"
+  }
+}
