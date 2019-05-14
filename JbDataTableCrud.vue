@@ -48,21 +48,20 @@
 
     <jb-dialog v-model="dialog.mostrar" @fechar="fecharDialog" :titulo="formTitulo" :fullscreen="dialogFullscreen" :persistent="dialogPersistent" :max-width="dialogMaxWidth || '750px'">
 
-        <jb-loading v-model="dialog.loading.mostrar"></jb-loading>
+        <jb-loading v-model="loading.mostrar"></jb-loading>
 
-        <jb-form @keyup.native.enter="submitEnter" v-model="dialog.form.valid" ref="form" validar :mensagens="dialog.form.mensagens_data" :mensagens-tipo="dialog.form.mensagensTipo_data" :mensagens-detalhes="dialog.form.mensagens_detalhes" :reset="dialog.form.reset" cancelar-submit>
+        <jb-form validar v-model="form.valid" ref="form" :mensagens="form.mensagens" :mensagens-tipo="form.mensagens_tipo" :mensagens-detalhes="form.mensagens_detalhes" :reset="form.reset" @keyup.native.enter="submitEnter" :reset-validation="form.resetValidation">
             <slot name="form"></slot>
 
             <v-card-actions slot="botoes">
                 <v-spacer></v-spacer>
                 <v-btn color="primary" flat @click="fecharDialog()">Cancelar</v-btn>
-                <v-btn color="primary" flat @click="saveConfirm()" :disabled="!dialog.form.valid || !valid">Salvar</v-btn>
+                <v-btn color="primary" flat @click="saveConfirm()" :disabled="!form.valid || !formValid">Salvar</v-btn>
             </v-card-actions>
         </jb-form>
 
     </jb-dialog>
 
-    <slot name="conteudo-extra"></slot>
 </div>
 </template>
 
@@ -70,19 +69,20 @@
 <script>
 
 export default {
+    beforeCreate () {
+    },
     props:{
         podeCriar:{type:Boolean, default:true},
         podeEditar:{type:Boolean, default:true},
-        podeDeletar:{type:Boolean, default:false},
         podeAtivarInativar:{type:Boolean, default:true},
+        podeDeletar:{type:Boolean, default:false},
 
         tituloNovo:String,
         tituloEditar:String,
 
         //form
         action:String, csrf:String,
-        mensagens:String, mensagensTipo:String,
-        valid:{type:Boolean, default:true},
+        formValid:{type:Boolean, default:true},
 
         //---- Toolbar
         toolbarBtnTitulo:String,
@@ -91,13 +91,11 @@ export default {
         headers:Array,
         items:Array,
         disableInitialSort:Boolean,
-        rowsPerPageItems:Array,
+        rowsPerPageItems:{type:Array, default:[25,50,100,{"text":"$vuetify.dataIterator.rowsPerPageAll","value":-1}]},
         pagination:Object,
         search:String,
 
         //---- Dialog
-        model:Object,
-        modelFields:Object,
         dialogPersistent:Boolean,
         dialogMaxWidth:String,
         dialogFullscreen:Boolean,
@@ -105,16 +103,24 @@ export default {
         //actions
         preNovo:{type:Function, default:v=>(v)},
         posNovo:{type:Function, default:v=>(v)},
-        preEditar:{type:Function, default:v=>(v)},
+        preEditar:{type:Function, default:function(item){
+                if(item.hasOwnProperty('ativo')){
+                    item.ativobool = item.ativo=='S'
+                }
+                return item;
+            }
+        },
         posEditar:{type:Function, default:v=>(v)},
         preAtivarInativar:{type:Function, default:v=>(v)},
         posAtivarInativar:{type:Function, default:v=>(v)},
         preDeletar:{type:Function, default:v=>(v)},
         posDeletar:{type:Function, default:v=>(v)},
 
-        //model
         preSalvar:{type:Function, default:v=>(v)},
 
+        //model
+        model:Object,
+        modelFields:Object,
         httpUrl:String,
 
     },
@@ -125,16 +131,17 @@ export default {
 
             dialog:{
                 mostrar: false,
-                form: {
-                    valid: false,
-                    reset: false,
-                    mensagens_data: this.mensagens,
-                    mensagensTipo_data: this.mensagensTipo,
-                    mensagens_detalhes:null,
-                },
-                loading:{
-                    mostrar:false
-                }
+            },
+            form: {
+                valid: false,
+                reset: false,
+                resetValidation: false,
+                mensagens: null,
+                mensagens_tipo: null,
+                mensagens_detalhes: null,
+            },
+            loading:{
+                mostrar:false
             },
             datatable:{
                 indexItem: -1,
@@ -155,10 +162,34 @@ export default {
         this.datatable.items = typeof this.items=='string' ? JSON.parse(this.items) : this.items
         this.initialize()
     },
+    mounted(){
+        // console.log('========== crud');
+        // var file = require('./../../models/veiculos/Marca').default
+        // var obj = new file({})
+        // console.log(file);
+        // console.log(obj);
+        // console.log(this.Model);
+        // console.log(this.classModelPath);
+        // console.log(teste.default({}));
+
+
+
+    },
+    watch:{
+        'dialog.mostrar'(abrindo){
+            if(abrindo){
+                //seta focus no mozilla firefox e edge
+                let campo = 'form'
+                this.$setFocus(campo)
+            }
+
+        },
+    },
     methods: {
         initialize(){
-            this.dialog.form.mensagens_data = null
-            this.dialog.form.reset = true
+            this.form.mensagens = null
+            this.form.reset = true
+            this.form.resetValidation = true
 
             this.modelFields = Object.assign(this.modelFields, this.modeloDefaultSave)
 
@@ -184,7 +215,7 @@ export default {
 
         // ==== Operações das Actions do Datatable
         novo(){
-            this.dialog.form.reset = true
+            this.form.reset = true
             this.preNovo()
             this.abrirDialog()
         },
@@ -194,11 +225,11 @@ export default {
             this.datatable.indexItem = this.datatable.items.indexOf(item)
             this.modelFields = Object.assign(this.modelFields, item)
 
-            this.dialog.form.reset = false
+            this.form.reset = false
             this.abrirDialog()
         },
         submitEnter(){
-            if(this.dialog.form.valid && this.valid){
+            if(this.form.valid && this.formValid){
                 this.saveConfirm()
             }
         },
@@ -242,7 +273,7 @@ export default {
         },
         saveConfirm () {
 
-            this.valid = false
+            this.formValid = false
 
             let item = this.modelFields
 
@@ -254,7 +285,7 @@ export default {
                         color: 'blue',
                         text: 'Não',
                         handle: () => {
-                            this.valid = true
+                            this.formValid = true
                         }
                     },
                     true: {
@@ -283,13 +314,13 @@ export default {
                 .preparaItem(item)
                 .createAndSave()
                 .then(v => {
-                    this.dialog.loading.mostrar = false
+                    this.loading.mostrar = false
                     let response = v.__response
 
                     if(response.erro){
-                        this.dialog.form.mensagensTipo_data = response.mensagens_tipo
-                        this.dialog.form.mensagens_data = response.mensagens
-                        this.dialog.form.mensagens_detalhes = response.exception
+                        this.form.mensagens = response.mensagens
+                        this.form.mensagens_tipo = response.mensagens_tipo
+                        this.form.mensagens_detalhes = response.exception
                     }
                     else {
                         let indexItem = this.datatable.items.indexOf(item)
@@ -324,7 +355,7 @@ export default {
         },
         save (item) {
 
-            this.dialog.loading.mostrar = true
+            this.loading.mostrar = true
 
             item = this.preSalvar(item)
 
@@ -336,13 +367,13 @@ export default {
                 .createAndSave()
                 .then(v => {
 
-                    this.dialog.loading.mostrar = false
+                    this.loading.mostrar = false
                     let response = v.__response
 
                     if(response.erro){
-                        this.dialog.form.mensagensTipo_data = response.mensagens_tipo
-                        this.dialog.form.mensagens_data = response.mensagens
-                        this.dialog.form.mensagens_detalhes = response.exception
+                        this.form.mensagens = response.mensagens
+                        this.form.mensagens_tipo = response.mensagens_tipo
+                        this.form.mensagens_detalhes = response.exception
                     }
                     else {
                         if (indexItem > -1) {
@@ -362,23 +393,9 @@ export default {
                     }
             });
 
-            this.valid = true
+            this.formValid = true
         },
     },
-    watch:{
-        mensagens(v){ this.dialog.form.mensagens_data = v },
-        mensagensTipo(v){ this.dialog.form.mensagensTipo_data = v },
-        'dialog.mostrar'(abrindo){
-            if(abrindo){
-                //seta focus no mozilla firefox e edge
-                let campo = 'form'
-                const element = this.$refs[campo].$el.querySelector('input')
-                if (element) this.$nextTick(() => { element.focus() })
-            }
 
-        },
-    },
-    mounted(){
-    },
 }
 </script>
