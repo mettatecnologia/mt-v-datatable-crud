@@ -119,15 +119,15 @@ export default {
         preSalvar:{type:Function, default:v=>(v)},
 
         //model
-        model:Object,
-        modelFields:Object,
+        vueapiqueryModel:Object,
+        value:Object,
         httpUrl:String,
 
     },
     data() {
         return {
-            modeloDefaultSave:JSON.parse(JSON.stringify(this.modelFields)),
-            Model: this.model,
+            modeloDefaultSave:JSON.parse(JSON.stringify(this.value)),
+            AxiosModel: this.vueapiqueryModel,
 
             dialog:{
                 mostrar: false,
@@ -163,17 +163,6 @@ export default {
         this.initialize()
     },
     mounted(){
-        // console.log('========== crud');
-        // var file = require('./../../models/veiculos/Marca').default
-        // var obj = new file({})
-        // console.log(file);
-        // console.log(obj);
-        // console.log(this.Model);
-        // console.log(this.classModelPath);
-        // console.log(teste.default({}));
-
-
-
     },
     watch:{
         'dialog.mostrar'(abrindo){
@@ -191,7 +180,7 @@ export default {
             this.form.reset = true
             this.form.resetValidation = true
 
-            this.modelFields = Object.assign(this.modelFields, this.modeloDefaultSave)
+            this.value = Object.assign(this.value, this.modeloDefaultSave)
 
             this.datatable.indexItem = -1
         },
@@ -223,7 +212,7 @@ export default {
             item = this.preEditar(item)
 
             this.datatable.indexItem = this.datatable.items.indexOf(item)
-            this.modelFields = Object.assign(this.modelFields, item)
+            this.value = Object.assign(this.value, item)
 
             this.form.reset = false
             this.abrirDialog()
@@ -275,7 +264,7 @@ export default {
 
             this.form.valid = false
 
-            let item = this.modelFields
+            let item = this.value
 
             this.$dialog.confirm({
                 title: 'Alerta!',
@@ -309,7 +298,7 @@ export default {
 
             item.ativobool = item.ativo=='N' //inverte os ativo
 
-            this.Model
+            this.AxiosModel
                 .preparaRequest({url:this.httpUrl})
                 .preparaItem(item)
                 .createAndSave()
@@ -336,7 +325,7 @@ export default {
 
             const index = this.datatable.items.indexOf(item)
 
-            this.Model
+            this.AxiosModel
                 .preparaRequest({url:this.httpUrl})
                 .createAndDelete(item)
                 .then(v => {
@@ -361,7 +350,7 @@ export default {
 
             let indexItem = this.datatable.indexItem
 
-            this.Model
+            this.AxiosModel
                 .preparaRequest({url:this.httpUrl})
                 .preparaItem(item)
                 .createAndSave()
@@ -387,8 +376,6 @@ export default {
 
                         this.posNovo(response, item)
                         this.posEditar(response, item)
-
-                        // delete this.Model.__response;
 
                     }
             });
