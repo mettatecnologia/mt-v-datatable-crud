@@ -273,7 +273,7 @@ export default {
         },
         saveConfirm () {
 
-            this.formValid = false
+            this.form.valid = false
 
             let item = this.modelFields
 
@@ -285,7 +285,7 @@ export default {
                         color: 'blue',
                         text: 'Não',
                         handle: () => {
-                            this.formValid = true
+                            this.form.valid = true
                         }
                     },
                     true: {
@@ -393,7 +393,7 @@ export default {
                     }
             });
 
-            this.formValid = true
+            this.form.valid = true
         },
     },
 
