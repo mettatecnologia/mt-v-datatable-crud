@@ -91,7 +91,7 @@ export default {
         headers:Array,
         items:Array,
         disableInitialSort:Boolean,
-        rowsPerPageItems:{type:Array, default:[25,50,100,{"text":"$vuetify.dataIterator.rowsPerPageAll","value":-1}]},
+        rowsPerPageItems:{type:Array, default:v=>([25,50,100,{"text":"$vuetify.dataIterator.rowsPerPageAll","value":-1}])},
         pagination:Object,
         search:String,
 
