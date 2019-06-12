@@ -1,6 +1,6 @@
 {
-  "name": "jb-v-datatable-crud",
-  "version": "1.0.5",
+  "name": "@metta/mt-v-datatable-crud",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -8,18 +8,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jbmchd/jb-v-datatable-crud.git"
+    "url": "git+https://github.com/mettatecnologia/mt-v-datatable-crud.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/jbmchd/jb-v-datatable-crud/issues"
+    "url": "https://github.com/mettatecnologia/mt-v-datatable-crud/issues"
   },
-  "homepage": "https://github.com/jbmchd/jb-v-datatable-crud#readme",
+  "homepage": "https://github.com/mettatecnologia/mt-v-datatable-crud#readme",
   "dependencies": {
-    "jb-v-plugin-global": "1.0.0",
     "vuetify-dialog": "^0.3.4",
-    "jb-v-dialog": "1.0.0"
+    "@metta/mt-v-plugin-global": "1.0.0",
+    "@metta/mt-v-dialog": "1.0.0"
   }
 }

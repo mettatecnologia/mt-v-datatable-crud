@@ -99,6 +99,7 @@ export default {
         dialogPersistent:Boolean,
         dialogMaxWidth:String,
         dialogFullscreen:Boolean,
+        dialogMostrar:Boolean,
 
         //actions
         preNovo:{type:Function, default:v=>(v)},
@@ -130,7 +131,7 @@ export default {
             AxiosModel: this.vueapiqueryModel,
 
             dialog:{
-                mostrar: false,
+                mostrar: this.dialogMostrar,
             },
             form: {
                 valid: false,
