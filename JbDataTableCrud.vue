@@ -28,12 +28,14 @@
 
             <!-- actions -->
             <td class="justify-center layout px-0">
-                <slot name="actions">
+                <slot :itens="props" name="actions">
                     <div class="mr-2 mt-3">
-                        <jb-icon v-if="podeEditar" small tt-text="Editar" @click="editar(props.item)" > edit </jb-icon>
-                        <jb-icon v-if="podeDeletar" small tt-text="Deletar" @click="deletarConfirm(props.item)" > delete </jb-icon>
+                        <slot :itens="props" name="actionsExtra"></slot>
 
-                        <jb-icon v-if="podeAtivarInativar" small :tt-text="props.item.ativo!='N' ? 'Inativar' : 'Ativar'" @click="ativarInativarConfirm(props.item)" > {{ props.item.ativo!='N' ? 'fas fa-level-down-alt' : 'fas fa-level-up-alt'}} </jb-icon>
+                        <jb-icon color="orange" v-if="podeEditar" small tt-text="Editar" @click="editar(props.item)" > edit </jb-icon>
+                        <jb-icon v-if="podeDeletar" color="red" small tt-text="Deletar" @click="deletarConfirm(props.item)" > delete </jb-icon>
+
+                        <jb-icon v-if="podeAtivarInativar" small :tt-text="props.item.ativo ? 'Inativar' : 'Ativar'" @click="ativarInativarConfirm(props.item)" > {{ props.item.ativo ? 'fas fa-level-down-alt' : 'fas fa-level-up-alt'}} </jb-icon>
 
                     </div>
                 </slot>
@@ -50,7 +52,7 @@
 
         <jb-loading v-model="loading.mostrar"></jb-loading>
 
-        <jb-form validar v-model="form.valid" ref="form" :mensagens="form.mensagens" :mensagens-tipo="form.mensagens_tipo" :mensagens-detalhes="form.mensagens_detalhes" :reset="form.reset" @keyup.native.enter="submitEnter" :reset-validation="form.resetValidation">
+        <jb-form validar v-model="form.valid" ref="form" :mensagens="form.mensagens.mensagens" :mensagens-tipo="form.mensagens.tipo" :mensagens-detalhes="form.mensagens.detalhes" :reset="form.reset" @keyup.native.enter="submitEnter" :reset-validation="form.resetValidation">
             <slot name="form"></slot>
 
             <v-card-actions slot="botoes">
@@ -104,13 +106,7 @@ export default {
         //actions
         preNovo:{type:Function, default:v=>(v)},
         posNovo:{type:Function, default:v=>(v)},
-        preEditar:{type:Function, default:function(item){
-                if(item.hasOwnProperty('ativo')){
-                    item.ativobool = item.ativo=='S'
-                }
-                return item;
-            }
-        },
+        preEditar:{type:Function, default:v=>(v)},
         posEditar:{type:Function, default:v=>(v)},
         preAtivarInativar:{type:Function, default:v=>(v)},
         posAtivarInativar:{type:Function, default:v=>(v)},
@@ -137,9 +133,11 @@ export default {
                 valid: false,
                 reset: false,
                 resetValidation: false,
-                mensagens: null,
-                mensagens_tipo: null,
-                mensagens_detalhes: null,
+                mensagens:{
+                    mensagens:null,
+                    tipo:null,
+                    detalhes:null,
+                },
             },
             loading:{
                 mostrar:false
@@ -163,21 +161,15 @@ export default {
         this.datatable.items = typeof this.items=='string' ? JSON.parse(this.items) : this.items
         this.initialize()
     },
-    mounted(){
-    },
     watch:{
         'dialog.mostrar'(abrindo){
-            if(abrindo){
-                //seta focus no mozilla firefox e edge
-                let campo = 'form'
-                this.$setFocus(campo)
-            }
-
+            //seta focus no mozilla firefox e edge
+            if(abrindo){ this.$setFocus('form') }
         },
     },
     methods: {
         initialize(){
-            this.form.mensagens = null
+            this.form.mensagens = this.$criarObjetoMensagensForm(null, null, null);
             this.form.reset = true
             this.form.resetValidation = true
 
@@ -296,8 +288,7 @@ export default {
         ativarInativar(item){
 
             item = this.preAtivarInativar(item)
-
-            item.ativobool = item.ativo=='N' //inverte os ativo
+            item.ativo = item.ativo ? 0 : 1
 
             this.AxiosModel
                 .preparaRequest({url:this.httpUrl})
@@ -308,9 +299,7 @@ export default {
                     let response = v.__response
 
                     if(response.erro){
-                        this.form.mensagens = response.mensagens
-                        this.form.mensagens_tipo = response.mensagens_tipo
-                        this.form.mensagens_detalhes = response.exception
+                        this.form.mensagens = this.$criarObjetoMensagensForm(response.mensagens[0], response.mensagens_tipo, response.exception);
                     }
                     else {
                         let indexItem = this.datatable.items.indexOf(item)
@@ -361,9 +350,7 @@ export default {
                     let response = v.__response
 
                     if(response.erro){
-                        this.form.mensagens = response.mensagens
-                        this.form.mensagens_tipo = response.mensagens_tipo
-                        this.form.mensagens_detalhes = response.exception
+                        this.form.mensagens = this.$criarObjetoMensagensForm(response.mensagens[0], response.mensagens_tipo, response.exception);
                     }
                     else {
                         if (indexItem > -1) {
