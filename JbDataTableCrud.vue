@@ -23,14 +23,14 @@
         <template v-slot:items="props">
 
             <template v-for="(cada, key) in datatable.headers" >
-                <td v-if="!cada.onlyheader" class="text-xs-center" :key="key">{{ props.item[cada.value] }}</td>
+                <td v-if="!cada.onlyheader" class="text-xs-center" :key="key">{{ headerFunction(cada, props.item[cada.value]) }}</td>
             </template>
 
             <!-- actions -->
             <td class="justify-center layout px-0">
                 <slot :itens="props" name="actions">
                     <div class="mr-2 mt-3">
-                        <slot :itens="props" name="actionsExtra"></slot>
+                        <slot name="actionsExtra" :datatable_props="props"></slot>
 
                         <jb-icon color="orange" v-if="podeEditar" small tt-text="Editar" @click="editar(props.item)" > edit </jb-icon>
                         <jb-icon v-if="podeDeletar" color="red" small tt-text="Deletar" @click="deletarConfirm(props.item)" > delete </jb-icon>
@@ -53,7 +53,7 @@
         <jb-loading v-model="loading.mostrar"></jb-loading>
 
         <jb-form validar v-model="form.valid" ref="form" :mensagens="form.mensagens.mensagens" :mensagens-tipo="form.mensagens.tipo" :mensagens-detalhes="form.mensagens.detalhes" :reset="form.reset" @keyup.native.enter="submitEnter" :reset-validation="form.resetValidation">
-            <slot name="form"></slot>
+            <slot name="form" :datatable_form="form"></slot>
 
             <v-card-actions slot="botoes">
                 <v-spacer></v-spacer>
@@ -85,6 +85,7 @@ export default {
         //form
         action:String, csrf:String,
         formValid:{type:Boolean, default:true},
+        formMensagens:{type:Object, default:{mensagens:null, tipo:null, detalhes:null}},
 
         //---- Toolbar
         toolbarBtnTitulo:String,
@@ -166,10 +167,40 @@ export default {
             //seta focus no mozilla firefox e edge
             if(abrindo){ this.$setFocus('form') }
         },
+        formMensagens:{
+            handler(v){
+                this.form.mensagens = this.$criarObjetoMensagensForm(this.formMensagens.mensagens, this.formMensagens.tipo, this.formMensagens.detalhes);
+            },
+            deep:true
+        }
     },
     methods: {
+        headerFunction(header, value){
+            if(header.metodo){
+                value = header.metodo(value)
+            }
+            if(header.format || header.formato){
+                let formato = header.format || header.formato
+                switch (formato) {
+                    case 'datetime':
+                    case 'date':
+                        if(value){ value = this.$passaDatetimeParaPtbr(value) }
+                        break;
+                    case 'credit-card':
+                    case 'cartao-credito':
+                        if(value){ value = this.$formataNumeroParaCartaoCredito(value) }
+                        break;
+                    case 'currency':
+                    case 'moeda':
+                        if(value){ value = this.$formataNumeroParaMoeda(value) }
+                        break;
+                }
+
+            }
+            return value
+        },
         initialize(){
-            this.form.mensagens = this.$criarObjetoMensagensForm(null, null, null);
+            this.form.mensagens = this.$criarObjetoMensagensForm(this.formMensagens.mensagens, this.formMensagens.tipo, this.formMensagens.detalhes);
             this.form.reset = true
             this.form.resetValidation = true
 

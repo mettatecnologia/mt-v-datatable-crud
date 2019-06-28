@@ -1,6 +1,6 @@
 {
   "name": "@metta/mt-v-datatable-crud",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -19,7 +19,7 @@
   "homepage": "https://github.com/mettatecnologia/mt-v-datatable-crud#readme",
   "dependencies": {
     "vuetify-dialog": "^0.3.4",
-    "@metta/mt-v-plugin-global": "1.0.0",
-    "@metta/mt-v-dialog": "1.0.0"
+    "@metta/mt-v-plugin-global": "1.0.1",
+    "@metta/mt-v-dialog": "1.0.1"
   }
 }
