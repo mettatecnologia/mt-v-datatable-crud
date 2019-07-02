@@ -57,8 +57,12 @@
 
             <v-card-actions slot="botoes">
                 <v-spacer></v-spacer>
-                <v-btn color="primary" flat @click="fecharDialog()">Cancelar</v-btn>
-                <v-btn color="primary" flat @click="saveConfirm()" :disabled="!form.valid || !formValid">Salvar</v-btn>
+                <slot name="botao-cancelar">
+                    <v-btn color="primary" flat @click="fecharDialog()">Cancelar</v-btn>
+                </slot>
+                <slot name="botao-salvar">
+                    <v-btn color="primary" flat @click="saveConfirm()" :disabled="!form.valid || !formValid">Salvar</v-btn>
+                </slot>
             </v-card-actions>
         </jb-form>
 
@@ -200,13 +204,19 @@ export default {
             return value
         },
         initialize(){
-            this.form.mensagens = this.$criarObjetoMensagensForm(this.formMensagens.mensagens, this.formMensagens.tipo, this.formMensagens.detalhes);
-            this.form.reset = true
-            this.form.resetValidation = true
+            if(Object.keys(this._events).indexOf('dialog-inicializar') > -1){
+                this.$emit('dialog-inicializar', this);
+            }
+            else {
+                this.form.mensagens = this.$criarObjetoMensagensForm(this.formMensagens.mensagens, this.formMensagens.tipo, this.formMensagens.detalhes);
+                this.form.reset = true
+                this.form.resetValidation = true
 
-            this.value = Object.assign(this.value, this.modeloDefaultSave)
+                this.value = Object.assign(this.value, this.modeloDefaultSave)
 
-            this.datatable.indexItem = -1
+                this.datatable.indexItem = -1
+            }
+
         },
         abrirDialog(){
             this.dialog.mostrar=true
