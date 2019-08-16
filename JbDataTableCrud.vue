@@ -10,43 +10,31 @@
     </slot>
 
 
-    <v-data-table
-        class="elevation-1"
-        :items="datatableItens"
+    <jb-datatable
+        :headers="headers"
+        :items="items"
         :search="datatableSearch"
-        :headers="datatable.headers"
-        :disable-initial-sort="datatable.disableInitialSort"
-        :rows-per-page-items="datatable.rowsPerPageItems"
-        :pagination.sync="datatable.pagination"
+        :footer-props="footerProps"
+        :items-per-page="itemsPerPage"
+
+        :sortBy.sync="sortBy"
+        :sort-desc="sortDesc"
+        :multi-sort="multiSort"
     >
 
-        <template v-slot:items="props">
+        <template v-slot:actions="{item, header, value}">
+            <div class="mr-2 mt-3">
 
-            <template v-for="(cada, key) in datatable.headers" >
-                <td v-if="!cada.onlyheader" class="text-xs-center" :key="key">{{ headerFunction(cada, props.item[cada.value]) }}</td>
-            </template>
+                <slot name="actions" :item="item"> </slot>
 
-            <!-- actions -->
-            <td class="justify-center layout px-0">
-                <slot :itens="props" name="actions">
-                    <div class="mr-2 mt-3">
-                        <slot name="actionsExtra" :datatable_props="props"></slot>
+                <jb-icon v-if="podeEditar" color="orange" small tt-text="Editar" @click="editar(item)" > edit </jb-icon>
+                <jb-icon v-if="podeDeletar" color="red" small tt-text="Deletar" @click="deletarConfirm(item)" > delete </jb-icon>
+                <jb-icon v-if="podeAtivarInativar" small :tt-text="item.ativo ? 'Inativar' : 'Ativar'" @click="ativarInativarConfirm(item)" > {{ item.ativo ? 'fas fa-level-down-alt' : 'fas fa-level-up-alt'}} </jb-icon>
 
-                        <jb-icon color="orange" v-if="podeEditar" small tt-text="Editar" @click="editar(props.item)" > edit </jb-icon>
-                        <jb-icon v-if="podeDeletar" color="red" small tt-text="Deletar" @click="deletarConfirm(props.item)" > delete </jb-icon>
-
-                        <jb-icon v-if="podeAtivarInativar" small :tt-text="props.item.ativo ? 'Inativar' : 'Ativar'" @click="ativarInativarConfirm(props.item)" > {{ props.item.ativo ? 'fas fa-level-down-alt' : 'fas fa-level-up-alt'}} </jb-icon>
-
-                    </div>
-                </slot>
-            </td>
-
-        </template>
-        <template slot="no-data" >
-            <v-alert :value="true" color="info" icon="info"> Nenhum item cadastrado. </v-alert>
+            </div>
         </template>
 
-    </v-data-table>
+    </jb-datatable>
 
     <jb-dialog v-model="dialog.mostrar" @fechar="fecharDialog" :titulo="formTitulo" :fullscreen="dialogFullscreen" :persistent="dialogPersistent" :max-width="dialogMaxWidth || '750px'">
 
@@ -58,10 +46,10 @@
             <v-card-actions slot="botoes">
                 <v-spacer></v-spacer>
                 <slot name="botao-cancelar">
-                    <v-btn color="primary" flat @click="fecharDialog()">Cancelar</v-btn>
+                    <v-btn color="primary" text @click="fecharDialog()">Cancelar</v-btn>
                 </slot>
                 <slot name="botao-salvar">
-                    <v-btn color="primary" flat @click="saveConfirm()" :disabled="!form.valid || !formValid">Salvar</v-btn>
+                    <v-btn color="primary" text @click="saveConfirm()" :disabled="!form.valid || !formValid">Salvar</v-btn>
                 </slot>
             </v-card-actions>
         </jb-form>
@@ -89,7 +77,7 @@ export default {
         //form
         action:String, csrf:String,
         formValid:{type:Boolean, default:true},
-        formMensagens:{type:Object, default:{mensagens:null, tipo:null, detalhes:null}},
+        formMensagens:{type:Object, default(){return{mensagens:null, tipo:null, detalhes:null}}},
 
         //---- Toolbar
         toolbarBtnTitulo:String,
@@ -97,9 +85,13 @@ export default {
         //---- Datatable
         headers:Array,
         items:Array,
-        disableInitialSort:Boolean,
-        rowsPerPageItems:{type:Array, default:v=>([25,50,100,{"text":"$vuetify.dataIterator.rowsPerPageAll","value":-1}])},
-        pagination:Object,
+        itemsPerPage:{type:Number, default:5},
+        footerProps:Array,
+
+        sortBy:Array,
+        sortDesc:Array,
+        multiSort:Boolean,
+
         search:String,
 
         //---- Dialog
@@ -149,30 +141,20 @@ export default {
             },
             datatable:{
                 indexItem: -1,
-                headers: this.headers,
-                search: null,
-                pagination: this.pagination,
-                rowsPerPageItems: this.rowsPerPageItems,
-                disableInitialSort: this.disableInitialSort,
             },
         }
     },
     computed: {
         formTitulo() { return this.datatable.indexItem === -1 ? this.tituloNovo :  this.tituloEditar },
         datatableSearch(){ return this.search || this.datatable.search },
-        datatableItens(){ return this.items },
     },
     created () {
         this.datatable.items = typeof this.items=='string' ? JSON.parse(this.items) : this.items
         this.initialize()
     },
     watch:{
-        'dialog.mostrar'(abrindo){
-            //seta focus no mozilla firefox e edge
-            if(abrindo){ this.$setFocus('form') }
-        },
         formMensagens:{
-            handler(v){
+            handler(){
                 this.form.mensagens = this.$criarObjetoMensagensForm(this.formMensagens.mensagens, this.formMensagens.tipo, this.formMensagens.detalhes);
             },
             deep:true
@@ -228,11 +210,11 @@ export default {
 
         // ==== Operacoes do Datatable
         changeSort (column) {
-            if (this.datatable.pagination.sortBy === column) {
-                this.datatable.pagination.descending = !this.datatable.pagination.descending
+            if (this.datatable.sortBy.sortBy === column) {
+                this.datatable.sortBy.descending = !this.datatable.sortBy.descending
             } else {
-                this.datatable.pagination.sortBy = column
-                this.datatable.pagination.descending = false
+                this.datatable.sortBy.sortBy = column
+                this.datatable.sortBy.descending = false
             }
         },
 
@@ -260,6 +242,7 @@ export default {
             this.$dialog.confirm({
                 title: 'Alerta!',
                 text: 'Tem certeza que deseja inativar?',
+                persistent: true,
                 actions: {
                     false: 'Não',
                     true: {
@@ -279,6 +262,7 @@ export default {
             this.$dialog.confirm({
                 title: 'Alerta!',
                 text: 'Tem certeza que deseja excluir este item?',
+                persistent: true,
                 actions: {
                     false: 'Não',
                     true: {
@@ -303,6 +287,7 @@ export default {
             this.$dialog.confirm({
                 title: 'Alerta!',
                 text: 'Tem certeza que quer salvar?',
+                persistent: true,
                 actions: {
                     false: {
                         color: 'blue',
