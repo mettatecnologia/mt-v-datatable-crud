@@ -40,7 +40,7 @@
 
         <jb-loading v-model="loading.mostrar"></jb-loading>
 
-        <jb-form validar v-model="form.valid" ref="form" :mensagens="form.mensagens.mensagens" :mensagens-tipo="form.mensagens.tipo" :mensagens-detalhes="form.mensagens.detalhes" :reset="form.reset" @keyup.native.enter="submitEnter" :reset-validation="form.resetValidation">
+        <jb-form validar v-model="form.valid" ref="jbform" :mensagens="form.mensagens.mensagens" :mensagens-tipo="form.mensagens.tipo" :mensagens-detalhes="form.mensagens.detalhes" :reset="form.reset" @keyup.native.enter="submitEnter" :reset-validation="form.resetValidation">
             <slot name="form" :datatable_form="form"></slot>
 
             <v-card-actions slot="botoes">
@@ -78,6 +78,7 @@ export default {
         action:String, csrf:String,
         formValid:{type:Boolean, default:true},
         formMensagens:{type:Object, default(){return{mensagens:null, tipo:null, detalhes:null}}},
+        resetValidation:Boolean,
 
         //---- Toolbar
         toolbarBtnTitulo:String,
@@ -129,7 +130,7 @@ export default {
             form: {
                 valid: false,
                 reset: false,
-                resetValidation: false,
+                resetValidation: this.resetValidation,
                 mensagens:{
                     mensagens:null,
                     tipo:null,
@@ -192,7 +193,10 @@ export default {
             else {
                 this.form.mensagens = this.$criarObjetoMensagensForm(this.formMensagens.mensagens, this.formMensagens.tipo, this.formMensagens.detalhes);
                 this.form.reset = true
-                this.form.resetValidation = true
+                if(this.$refs.jbform)
+                {
+                    this.$refs.jbform.$refs.vform.resetValidation()
+                }
 
                 this.value = Object.assign(this.value, this.modeloDefaultSave)
 
