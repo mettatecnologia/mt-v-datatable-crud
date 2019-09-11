@@ -1,40 +1,42 @@
 <template>
 <div>
 
-    <slot name="toolbar">
-        <v-toolbar flat color="white">
-            <v-btn v-if="podeCriar" color="primary" dark class="mb-2" @click="novo()">{{toolbarBtnTitulo || tituloNovo || 'Adicionar'}}</v-btn>
-            <v-spacer></v-spacer>
-            <v-text-field v-model="datatable.search" append-icon="search" label="Search" single-line hide-details ></v-text-field>
-        </v-toolbar>
+    <slot name="datatable">
+
+        <jb-datatable
+            :headers="headers"
+            :items="datatable.items"
+            :search="datatableSearch"
+            :footer-props="footerProps"
+            :items-per-page="itemsPerPage"
+
+            :sortBy.sync="sortBy"
+            :sort-desc="sortDesc"
+            :multi-sort="multiSort"
+            ref="jb-datatable"
+        >
+
+            <template v-slot:top>
+                <v-toolbar flat color="white">
+                    <v-btn v-if="podeCriar" color="primary" dark class="mb-2" @click="novo()">{{toolbarBtnTitulo || tituloNovo || 'Adicionar'}}</v-btn>
+                    <v-spacer></v-spacer>
+                    <v-text-field v-model="datatable.search" append-icon="search" label="Search" single-line hide-details ></v-text-field>
+                </v-toolbar>
+            </template>
+
+            <template v-slot:item.actions="{ item, header, value }" >
+                <div class="mr-2 mt-3">
+
+                    <jb-icon v-if="podeEditar" color="orange" small tt-text="Editar" @click="editar(item)" > edit </jb-icon>
+                    <jb-icon v-if="podeDeletar" color="red" small tt-text="Deletar" @click="deletarConfirm(item)" > delete </jb-icon>
+                    <jb-icon v-if="podeAtivarInativar" small :tt-text="item.ativo ? 'Inativar' : 'Ativar'" @click="ativarInativarConfirm(item)" > {{ item.ativo ? 'fas fa-level-down-alt' : 'fas fa-level-up-alt'}} </jb-icon>
+
+                </div>
+            </template>
+
+        </jb-datatable>
+
     </slot>
-
-
-    <jb-datatable
-        :headers="headers"
-        :items="items"
-        :search="datatableSearch"
-        :footer-props="footerProps"
-        :items-per-page="itemsPerPage"
-
-        :sortBy.sync="sortBy"
-        :sort-desc="sortDesc"
-        :multi-sort="multiSort"
-    >
-
-        <template v-slot:actions="{item, header, value}">
-            <div class="mr-2 mt-3">
-
-                <slot name="actions" :item="item"> </slot>
-
-                <jb-icon v-if="podeEditar" color="orange" small tt-text="Editar" @click="editar(item)" > edit </jb-icon>
-                <jb-icon v-if="podeDeletar" color="red" small tt-text="Deletar" @click="deletarConfirm(item)" > delete </jb-icon>
-                <jb-icon v-if="podeAtivarInativar" small :tt-text="item.ativo ? 'Inativar' : 'Ativar'" @click="ativarInativarConfirm(item)" > {{ item.ativo ? 'fas fa-level-down-alt' : 'fas fa-level-up-alt'}} </jb-icon>
-
-            </div>
-        </template>
-
-    </jb-datatable>
 
     <jb-dialog v-model="dialog.mostrar" @fechar="fecharDialog" :titulo="formTitulo" :fullscreen="dialogFullscreen" :persistent="dialogPersistent" :max-width="dialogMaxWidth || '750px'">
 
@@ -63,8 +65,6 @@
 <script>
 
 export default {
-    beforeCreate () {
-    },
     props:{
         podeCriar:{type:Boolean, default:true},
         podeEditar:{type:Boolean, default:true},
@@ -141,6 +141,7 @@ export default {
                 mostrar:false
             },
             datatable:{
+                items:[],
                 indexItem: -1,
             },
         }
@@ -150,8 +151,10 @@ export default {
         datatableSearch(){ return this.search || this.datatable.search },
     },
     created () {
-        this.datatable.items = typeof this.items=='string' ? JSON.parse(this.items) : this.items
+        this.datatable.items = this.$clonarObjeto(this.items)
         this.initialize()
+    },
+    mounted(){
     },
     watch:{
         formMensagens:{
@@ -162,30 +165,6 @@ export default {
         }
     },
     methods: {
-        headerFunction(header, value){
-            if(header.metodo){
-                value = header.metodo(value)
-            }
-            if(header.format || header.formato){
-                let formato = header.format || header.formato
-                switch (formato) {
-                    case 'datetime':
-                    case 'date':
-                        if(value){ value = this.$passaDatetimeParaPtbr(value) }
-                        break;
-                    case 'credit-card':
-                    case 'cartao-credito':
-                        if(value){ value = this.$formataNumeroParaCartaoCredito(value) }
-                        break;
-                    case 'currency':
-                    case 'moeda':
-                        if(value){ value = this.$formataNumeroParaMoeda(value) }
-                        break;
-                }
-
-            }
-            return value
-        },
         initialize(){
             if(Object.keys(this._events).indexOf('dialog-inicializar') > -1){
                 this.$emit('dialog-inicializar', this);
@@ -212,16 +191,6 @@ export default {
             this.initialize()
         },
 
-        // ==== Operacoes do Datatable
-        changeSort (column) {
-            if (this.datatable.sortBy.sortBy === column) {
-                this.datatable.sortBy.descending = !this.datatable.sortBy.descending
-            } else {
-                this.datatable.sortBy.sortBy = column
-                this.datatable.sortBy.descending = false
-            }
-        },
-
         // ==== Operações das Actions do Datatable
         novo(){
             this.form.reset = true
@@ -229,9 +198,11 @@ export default {
             this.abrirDialog()
         },
         editar (item) {
+            this.datatable.indexItem = this.datatable.items.indexOf(item)
+
+            item = this.buscaItemOriginal(this.datatable.indexItem)
             item = this.preEditar(item)
 
-            this.datatable.indexItem = this.datatable.items.indexOf(item)
             this.value = Object.assign(this.value, item)
 
             this.form.reset = false
@@ -312,6 +283,9 @@ export default {
                     }
                 }
             })
+        },
+        buscaItemOriginal(index){
+            return this.items[index]
         },
 
         // ==== Operações HTTP

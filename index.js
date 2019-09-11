@@ -1,5 +1,9 @@
 let Vue = window.Vue
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+Vue['_VDataTable'] = _interopRequireDefault(require("vuetify/lib/components/VDataTable/VDataTable")).default;
+
+
 if( ! Vue.$_vuetifydialog_installed){
     console.warn(
                     `VuetifyDialog é uma dependência necessária para este componente, siga os seguintes passos:\n

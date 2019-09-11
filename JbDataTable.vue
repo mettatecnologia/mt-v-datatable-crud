@@ -1,37 +1,40 @@
+<!-- V-SLOTS DISPONÍVEIS EM 09/09/2019
+
+    <template v-slot:body="{ items, pagination, options, groupedItems, updateOptions, sort, group, headers, isMobile }" ></template>
+    <template v-slot:body.append="{ items, pagination, options, groupedItems, updateOptions, sort, group, headers, isMobile }" ></template>
+    <template v-slot:body.prepend="{ items, pagination, options, groupedItems, updateOptions, sort, group }" ></template>
+
+    <template v-slot:footer="{ items, pagination, options, groupedItems, updateOptions, sort, group, headers, isMobile }" ></template>
+    <template v-slot:footer.page-text="{ pageStart, pageStop, itemsLength }" ></template>
+
+    <template v-slot:group="{ items, pagination, options, groupedItems, updateOptions, sort, group }" ></template>
+    <template v-slot:group.header="{ items, pagination, options, groupedItems, updateOptions, sort, group }" ></template>
+    <template v-slot:group.summary="{ items, pagination, options, groupedItems, updateOptions, sort, group }" ></template>
+
+    <template v-slot:header="{ props, on }" ></template>
+    <template v-slot:header.name="{ header }" ></template>
+    <template v-slot:header.data-table-select="{ props, on }" ></template>
+
+    <template v-slot:item="{ item, select, isSelected, expand, isExpanded, headers, index }" ></template>
+    <template v-slot:item.<name>="{ item, header, value }" ></template>
+    <template v-slot:item.data-table-expand="{ item, select, isSelected, expand, isExpanded, headers }" ></template>
+    <template v-slot:item.data-table-select="{ item, select, isSelected, expand, isExpanded, headers }" ></template>
+
+    <template v-slot:expanded-item="{ item, headers }" ></template>
+
+    <template v-slot:loading ></template>
+    <template v-slot:no-data ></template>
+    <template v-slot:no-results ></template>
+    <template v-slot:progress="{ items, pagination, options, groupedItems, updateOptions, sort, group }" ></template>
+    <template v-slot:top="{ items, pagination, options, groupedItems, updateOptions, sort, group }" ></template>
+
+-->
 <template>
 
 
-    <v-data-table
-        class="elevation-1"
-        :headers="headers"
-        :items="datatableItens"
-        :search="search"
-        :footer-props="footerProps"
-        :items-per-page="itemsPerPage"
-
-        :sortBy.sync="sortBy"
-        :sort-desc="sortDesc"
-        :multi-sort="multiSort"
-
-        ref="jb-datatable"
-    >
-
-        <template v-slot:item="{item, select, isSelected, expand, isExpanded, headers, index}">
-            <tr>
-                <template v-for="(cada, key) in headers" >
-                    <td v-if="!cada.onlyheader" class="text-center" :key="key">{{ headerFunction(cada, item[cada.value]) }}</td>
-                </template>
-
-                <!-- actions -->
-                <td class="justify-center layout px-0">
-                    <slot name="actions" :item="item"> </slot>
-                </td>
-            </tr>
-        </template>
-
-        <template slot="no-data" >
-            <v-alert color="info" icon="info"> Nenhum item cadastrado. </v-alert>
-        </template>
+    <v-data-table class="elevation-1" :ref="vuetify_ref" >
+        <!-- O V-SLOT ABAIXO ATIVA TODOS OS V-SLOTS PARA MESCLAGEM NO METODO 'mesclarComponentesHeranca' -->
+        <template v-slot:body.append="{ items, pagination, options, groupedItems, updateOptions, sort, group, headers, isMobile }" > </template>
 
     </v-data-table>
 
@@ -42,42 +45,47 @@
 <script>
 
 export default {
-    props:{
-        headers:Array,
-        items:Array,
-        itemsPerPage:{type:Number, default:5},
-        footerProps:{type:Array,default(){return{
-            showFirstLastPage: true,
-            firstIcon: 'mdi-arrow-collapse-left',
-            lastIcon: 'mdi-arrow-collapse-right',
-            prevIcon: 'mdi-minus',
-            nextIcon: 'mdi-plus',
-            itemsPerPageOptions: [25, 50, 75, 100, {text:'Todos',value:-1}]
-        }}},
 
-        sortBy:{type:Array, default(){return['id']}},
-        sortDesc:{type:Array, default(){return[false]}},
-        multiSort:Boolean,
-
-        search:String,
-
+    extends: window.Vue._VDataTable,
+    computed:{
+        vuetify_ref(){
+            return this.ref || 'v-data-table'
+        }
     },
-    data() { return {
-    }},
-    computed: {
-        datatableItens(){ return this.items },
+    created(){
+        this.alterarItemsPeloHeader()
     },
-    created () {
-        this.items = typeof this.items=='string' ? JSON.parse(this.items) : this.items
+    mounted(){
+        this.mesclarComponentesHeranca();
     },
     methods: {
-        headerFunction(header, value){
-
-            if(header.metodo){
-                value = header.metodo(value)
+        aplicarHeaderMetodo(metodo, value){
+            return value = metodo(value)
+        },
+        aplicarHeaderFormato(formato, value){
+            switch (formato) {
+                case 'datetime':
+                    case 'date':
+                        if(value){ value = this.$passaDatetimeParaPtbr(value) }
+                    break;
+                case 'credit-card':
+                case 'cartao-credito':
+                    if(value){ value = this.$formataNumeroParaCartaoCredito(value) }
+                    break;
+                case 'currency':
+                case 'moeda':
+                    if(value){ value = this.$formataNumeroParaMoeda(value) }
+                    break;
             }
-            if(header.format || header.formato){
-                let formato = header.format || header.formato
+            return value
+        },
+        aplicarHeaderAlteracoes(header, value){
+            let metodo = header.metodo || header.method
+            let formato = header.format || header.formato
+            if(metodo){
+                value = this.aplicarHeaderMetodo(metodo, value)
+            }
+            if(formato){
                 switch (formato) {
                     case 'datetime':
                     case 'date':
@@ -92,18 +100,30 @@ export default {
                         if(value){ value = this.$formataNumeroParaMoeda(value) }
                         break;
                 }
-
             }
             return value
         },
-        changeSort (column) {
-            if (this.sortBy.sortBy === column) {
-                this.sortBy.descending = !this.sortBy.descending
-            } else {
-                this.sortBy.sortBy = column
-                this.sortBy.descending = false
+        alterarItemsPeloHeader(){
+            for (const key_header in this.headers) {
+                const header = this.headers[key_header];
+                if(header.method || header.metodo || header.format || header.formato){
+                    for (const key_item in this.items) {
+                        const item = this.items[key_item];
+                        item[header.value] = this.aplicarHeaderAlteracoes(header, item.nome)
+                    }
+
+                }
+
             }
         },
+        mesclarComponentesHeranca(){
+            let vuetify_comp = this.$refs[this.vuetify_ref]
+
+            Object.assign(vuetify_comp._props, this._props)
+            Object.assign(vuetify_comp.$scopedSlots, this.$scopedSlots)
+            Object.assign(vuetify_comp.$slots, this.$slots)
+        },
+
 
     },
 
